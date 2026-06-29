@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cieneguilla · Balance Mensual</title>
+<style>
+  :root{
+    --bg:#0f1420; --card:#1a2232; --card2:#212c41; --line:#2c3953;
+    --txt:#e8edf6; --muted:#9aa7bd; --accent:#4f9cf9;
+    --madre:#f08fb0; --jl:#5cd6c0; --pos:#5cd6c0; --neg:#f07a7a; --alq:#4f9cf9; --gas:#f0a868;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:linear-gradient(160deg,#0c111b,#131c2e);color:var(--txt);padding:32px 20px;min-height:100vh}
+  .wrap{max-width:1080px;margin:0 auto}
+  header{margin-bottom:24px}
+  h1{font-size:26px;font-weight:700;letter-spacing:.3px}
+  .sub{color:var(--muted);font-size:13px;margin-top:6px}
+  .stamp{display:inline-block;font-size:12px;color:#7d8aa3;background:var(--card);border:1px solid var(--line);padding:4px 10px;border-radius:8px}
+  .btn{font-size:13px;font-weight:600;color:var(--txt);background:var(--accent);border:none;padding:7px 14px;border-radius:9px;cursor:pointer;transition:filter .15s,transform .05s}
+  .btn:hover{filter:brightness(1.1)} .btn:active{transform:translateY(1px)} .btn:disabled{opacity:.55;cursor:default}
+  .grid{display:grid;gap:16px}
+  .kpis{grid-template-columns:repeat(4,1fr);margin-bottom:24px}
+  @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .kpi .label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+  .kpi .val{font-size:24px;font-weight:700;margin-top:8px}
+  .kpi .val.madre{color:var(--madre)} .kpi .val.jl{color:var(--jl)}
+  .pill{display:inline-block;font-size:11px;color:var(--muted);margin-top:6px}
+  h2{font-size:16px;margin:8px 0 14px;font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:11px 12px;text-align:right;border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  thead th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  tbody tr:hover{background:var(--card2)}
+  td.num{font-variant-numeric:tabular-nums}
+  .util{font-weight:700;color:var(--pos)}
+  .neg{color:var(--neg)!important}
+  .madre-c{color:var(--madre);font-weight:600} .jl-c{color:var(--jl);font-weight:600}
+  tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:none;background:var(--card2)}
+  .section{margin-bottom:24px}
+  .bars{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+  .barrow{display:grid;grid-template-columns:70px 1fr;align-items:center;gap:12px}
+  .barrow .m{color:var(--muted);font-size:13px}
+  .barstack{display:flex;flex-direction:column;gap:5px}
+  .bar{height:18px;border-radius:5px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:11px;color:#06121b;font-weight:700;min-width:34px;white-space:nowrap}
+  .bar.madre{background:var(--madre)} .bar.jl{background:var(--jl)}
+  .legend{display:flex;gap:18px;margin-top:14px;font-size:12px;color:var(--muted)}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+  .note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.two{grid-template-columns:1fr}}
+  .ratio{display:flex;height:14px;border-radius:7px;overflow:hidden;margin-top:10px}
+  .ratio .s55{background:var(--madre);width:55%} .ratio .s45{background:var(--jl);width:45%}
+  /* calendario */
+  .cals{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:4px}
+  @media(max-width:760px){.cals{grid-template-columns:1fr}}
+  .cal{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .calhd{text-align:center;font-weight:600;margin-bottom:8px;text-transform:capitalize}
+  .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .dow{text-align:center;font-size:10px;color:var(--muted);padding-bottom:4px}
+  .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:6px;background:#19212f;color:#aeb9cc}
+  .cell.free{background:rgba(92,214,192,.16);color:#bff0e7;font-weight:700}
+  .cell.occ{background:rgba(240,122,122,.22);color:#f7b3b3;cursor:help}
+  .cell.past{background:transparent;color:#4d5a72}
+  .cell.today{outline:2px solid var(--accent);outline-offset:-2px}
+  /* badges de reservas */
+  .bdg{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:11px;white-space:nowrap}
+  .bclosed{background:#34405a;color:#9aa7bd}
+  .bcur{background:rgba(92,214,192,.22);color:#6ee7d2}
+  .bnext{background:rgba(79,156,249,.2);color:#8fc0ff}
+  .tagp{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;vertical-align:middle;margin-left:4px}
+  .tagp.pact{background:rgba(79,156,249,.2);color:#8fc0ff}
+  .tagp.pago{background:rgba(240,168,104,.2);color:#f0c08a}
+  .submuted{font-size:10px;color:var(--muted);font-weight:400;margin-top:2px}
+  /* celdas clicables */
+  td.link{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;transition:color .15s}
+  td.link:hover{color:var(--accent)}
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(6,10,18,.72);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow-y:auto}
+  .overlay.open{display:flex}
+  .modal{background:var(--card);border:1px solid var(--line);border-radius:16px;max-width:680px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .modal h3{font-size:18px;margin-bottom:2px}
+  .modal .msub{color:var(--muted);font-size:12px;margin-bottom:16px}
+  .modal table{font-size:13px}
+  .modal th,.modal td{padding:9px 10px}
+  .grphead td{background:var(--card2);color:var(--madre);font-weight:700;border-bottom:1px solid var(--line)}
+  .subtot td{color:var(--muted);font-style:italic;border-bottom:1px solid var(--line)}
+  .grand td{font-weight:700;border-top:2px solid var(--line);background:var(--card2)}
+  .closeb{float:right;cursor:pointer;color:var(--muted);font-size:22px;line-height:1;border:none;background:none;margin-top:-4px}
+  .closeb:hover{color:var(--txt)}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;background:#2a3650;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🏠 Cieneguilla · Balance Mensual de Alquileres</h1>
+    <div class="sub">Utilidad neta = alquileres del mes − gastos del mes · Reparto: Madre 55% · Jose Luis 45% · Valores en S/</div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <button class="btn" id="btn-refresh" onclick="refresh()">🔄 Actualizar</button>
+      <div class="stamp" id="stamp">⏳ Conectando con el Google Sheet…</div>
+    </div>
+  </header>
+
+  <div class="grid kpis" id="kpis"></div>
+
+  <div class="section card">
+    <h2>Cuadro mes a mes</h2>
+    <div style="overflow-x:auto">
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th>Mes</th><th>Alquileres</th><th>Gastos</th><th>Utilidad neta</th>
+          <th>Madre 55%</th><th>+ Reemb. Papás</th><th>Madre recibe</th>
+          <th>JL 45%</th><th>+ Reemb. JL</th><th>JL recibe</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
+    </div>
+    <div class="note" id="foot-note"></div>
+  </div>
+
+  <div class="two">
+    <div class="section card">
+      <h2>Reparto por mes (S/)</h2>
+      <div class="bars" id="bars"></div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--madre)"></span>Madre 55%</span>
+        <span><span class="dot" style="background:var(--jl)"></span>Jose Luis 45%</span>
+      </div>
+    </div>
+    <div class="section card">
+      <h2>Total acumulado</h2>
+      <div id="totals"></div>
+    </div>
+  </div>
+
+  <div class="section card">
+    <h2>🗓️ Reservas</h2>
+    <div class="note" style="margin-top:0;margin-bottom:12px">Estado según la fecha de hoy · <b>Monto alquiler</b>: <span class="tagp pact">pactado</span> = monto del alquiler declarado en el Sheet (con lo pagado debajo) · <span class="tagp pago">pagado</span> = no se declaró monto, se muestra lo efectivamente recibido.</div>
+    <div id="reservas"></div>
+  </div>
+
+  <div class="section card">
+    <h2>📅 Disponibilidad · mes en curso + 2 meses</h2>
+    <div class="cals" id="calendars"></div>
+    <div class="legend">
+      <span><span class="dot" style="background:rgba(92,214,192,.7)"></span>Disponible</span>
+      <span><span class="dot" style="background:rgba(240,122,122,.8)"></span>Ocupado (pasa el mouse para ver quién)</span>
+      <span><span class="dot" style="background:#4d5a72"></span>Día pasado</span>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="closeb" onclick="closeModal()">&times;</button>
+    <h3 id="m-title"></h3>
+    <div class="msub" id="m-sub"></div>
+    <div id="m-body"></div>
+  </div>
+</div>
+
+<script>
+const fmt = n => 'S/ ' + (n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc = s => String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const neg = v => v < 0 ? ' neg' : '';
+const SHEET_ID = '1GnOj95ZJoH5WlhFtssfHECbHG5ITikHzTpDYJO5Iivc';
+
+// Copia local (snapshot generado por actualizar-dashboard.ps1) — se usa si no hay internet
+const dataFallback = [
+  {mes:'Junio 2026', alq:4286.25, gas:2859.4, util:1426.85, madre:784.77, jl:642.08, rpapas:0, rjl:183.6, madreTot:784.77, jlTot:825.68},
+  {mes:'Julio 2026', alq:4845, gas:0, util:4845, madre:2664.75, jl:2180.25, rpapas:0, rjl:0, madreTot:2664.75, jlTot:2180.25},
+  {mes:'Agosto 2026', alq:1256.25, gas:0, util:1256.25, madre:690.94, jl:565.31, rpapas:0, rjl:0, madreTot:690.94, jlTot:565.31},
+  {mes:'Octubre 2026', alq:2125, gas:0, util:2125, madre:1168.75, jl:956.25, rpapas:0, rjl:0, madreTot:1168.75, jlTot:956.25},
+];
+const detalleFallback = [
+  {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'Gastos de Angel', fecha:'2026-06-28', monto:1682, fuente:'Cuentas Cieneguilla'},
+  {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'comision transferencia bbva', fecha:'2026-06-28', monto:5.8, fuente:'Cuentas Cieneguilla'},
+  {mes:'Junio 2026', tipo:'SALIDA', asignado:'Geovana Campos', desc:'devolución garantía', fecha:'2026-06-26', monto:59, fuente:'Cuentas Cieneguilla'},
+  {mes:'Julio 2026', tipo:'INGRESO', asignado:'Geo Carrera', desc:'Reserva - Geo Carrera', fecha:'2026-07-10 - 2026-07-12', monto:680, fuente:''},
+  {mes:'Junio 2026', tipo:'INGRESO', asignado:'Geovana Campos', desc:'Saldo alquiler', fecha:'2026-06-19 - 2026-06-21', monto:1225, fuente:''},
+  {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'Luz Junio', fecha:'2026-06-19', monto:238, fuente:'Cuentas Cieneguilla'},
+  {mes:'Junio 2026', tipo:'INGRESO', asignado:'Catherine Moreno', desc:'Reserva Catherine Moreno', fecha:'2026-06-26 - 2026-06-29', monto:2261.25, fuente:''},
+  {mes:'Julio 2026', tipo:'INGRESO', asignado:'Fiorella Alvarez', desc:'Reserva Fiorella Alvarez', fecha:'2026-07-25 - 2026-07-27', monto:2210, fuente:''},
+  {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'saldo de pago a Angel de Mayo', fecha:'2026-06-01', monto:691, fuente:'Cuentas Cieneguilla'},
+  {mes:'Agosto 2026', tipo:'INGRESO', asignado:'Diana Alvarado', desc:'Reserva Diana Alvarado', fecha:'2026-08-28 - 2026-08-30', monto:1256.25, fuente:''},
+  {mes:'Julio 2026', tipo:'INGRESO', asignado:'Catherine Moreno', desc:'reserva Catherine Moreno', fecha:'2026-07-17 - 2026-07-19', monto:1955, fuente:''},
+  {mes:'Junio 2026', tipo:'INGRESO', asignado:'Geovana Campos', desc:'Reserva Geovana Campos', fecha:'2026-06-19 - 2026-06-21', monto:800, fuente:''},
+  {mes:'Octubre 2026', tipo:'INGRESO', asignado:'Giuseppe Gamarra', desc:'Reserva Giussepe', fecha:'2026-10-19 - 2026-10-26', monto:2125, fuente:''},
+  {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'Manychat', fecha:'2026-06-12', monto:183.6, fuente:'Jose Luis'},
+];
+const bookingsFallback = [
+  {start:'2026-07-10', end:'2026-07-12', label:'Geo Carrera'},
+  {start:'2026-06-19', end:'2026-06-21', label:'Geovana Campos'},
+  {start:'2026-06-26', end:'2026-06-29', label:'Catherine Moreno'},
+  {start:'2026-07-25', end:'2026-07-27', label:'Fiorella Alvarez'},
+  {start:'2026-08-28', end:'2026-08-30', label:'Diana Alvarado'},
+  {start:'2026-07-17', end:'2026-07-19', label:'Catherine Moreno'},
+  {start:'2026-06-19', end:'2026-06-21', label:'Geovana Campos'},
+  {start:'2026-10-19', end:'2026-10-26', label:'Giuseppe Gamarra'},
+];
+const reservasFallback = [
+  {label:'Geovana Campos', start:'2026-06-19', end:'2026-06-21', paid:2025, alqMonto:null, alqMon:null, garMonto:null, garMon:null},
+  {label:'Catherine Moreno', start:'2026-06-26', end:'2026-06-29', paid:2261.25, alqMonto:null, alqMon:null, garMonto:null, garMon:null},
+  {label:'Geo Carrera', start:'2026-07-10', end:'2026-07-12', paid:680, alqMonto:null, alqMon:null, garMonto:null, garMon:null},
+  {label:'Catherine Moreno', start:'2026-07-17', end:'2026-07-19', paid:1955, alqMonto:null, alqMon:null, garMonto:null, garMon:null},
+  {label:'Fiorella Alvarez', start:'2026-07-25', end:'2026-07-27', paid:2210, alqMonto:null, alqMon:null, garMonto:null, garMon:null},
+  {label:'Diana Alvarado', start:'2026-08-28', end:'2026-08-30', paid:1256.25, alqMonto:null, alqMon:null, garMonto:null, garMon:null},
+  {label:'Giuseppe Gamarra', start:'2026-10-19', end:'2026-10-26', paid:2125, alqMonto:1050, alqMon:'Dólares', garMonto:150, garMon:'Dólares'},
+];
+
+// ============ CÁLCULO (mismo criterio que el script PowerShell) ============
+const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const pad2 = n => String(n).padStart(2,'0');
+const round2 = x => Math.round((x + Number.EPSILON)*100)/100;
+const keyOf = d => d.getFullYear() + '-' + pad2(d.getMonth()+1);
+const friendly = k => { const p = k.split('-'); return MESES[+p[1]] + ' ' + p[0]; };
+const isoOf = d => d ? (d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())) : '';
+function normalize(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim(); }
+function fundTarget(z){ const s = normalize(z); if(s.includes('papa')) return 'PAPAS'; if(s.includes('jose')||s.includes('luis')||s.includes('jlmogrovejov')) return 'JL'; return 'CIEN'; }
+function allocByMonth(d0,d1,amount){
+  if(!d0||!d1||d1<d0) return null;
+  const cnt = {}; let total = 0;
+  for(let d=new Date(d0); d<=d1; d.setDate(d.getDate()+1)){ const k=keyOf(d); cnt[k]=(cnt[k]||0)+1; total++; }
+  const out = {}; for(const k in cnt) out[k] = round2(amount*cnt[k]/total); return out;
+}
+function computeFromRows(rows){
+  const income={}, exp={}, rP={}, rJ={}, detalle=[], bookings=[], resMap={};
+  rows.forEach(r=>{
+    if(r.io === 'INGRESO'){
+      const a = allocByMonth(r.desde, r.hasta, r.bal);
+      if(!a) return;
+      const asig = (r.asignado && String(r.asignado).trim()) ? r.asignado : '(Sin asignar)';
+      const fecha = isoOf(r.desde) + (r.hasta ? ' - ' + isoOf(r.hasta) : '');
+      for(const k in a){ income[k]=(income[k]||0)+a[k];
+        detalle.push({mes:friendly(k), tipo:'INGRESO', asignado:asig, desc:r.desc, fecha, monto:a[k], fuente:''}); }
+      if(r.desde && r.hasta){
+        const label = (r.asignado && String(r.asignado).trim()) ? r.asignado : r.desc;
+        bookings.push({start:isoOf(r.desde), end:isoOf(r.hasta), label});
+        const rk = label+'|'+isoOf(r.desde)+'|'+isoOf(r.hasta);
+        let R = resMap[rk];
+        if(!R){ R = resMap[rk] = {label, start:isoOf(r.desde), end:isoOf(r.hasta), paid:0, alqMonto:null, alqMon:null, garMonto:null, garMon:null}; }
+        R.paid = round2(R.paid + r.bal);
+        if(r.montoAlq!=null && String(r.montoAlq).trim()!==''){ R.alqMonto = Number(r.montoAlq); R.alqMon = r.monAlq; }
+        if(r.garantia!=null && String(r.garantia).trim()!==''){ R.garMonto = Number(r.garantia); R.garMon = r.monGar; }
+      }
+    } else if(r.io === 'SALIDA'){
+      if(!r.cuando) return;
+      const k = keyOf(r.cuando), amt = Math.abs(r.bal);
+      exp[k]=(exp[k]||0)+amt;
+      const t = fundTarget(r.fuente);
+      if(t==='PAPAS') rP[k]=(rP[k]||0)+amt; else if(t==='JL') rJ[k]=(rJ[k]||0)+amt;
+      const fte = (r.fuente && String(r.fuente).trim()) ? r.fuente : 'Cuentas Cieneguilla';
+      detalle.push({mes:friendly(k), tipo:'SALIDA', asignado:r.asignado, desc:r.desc, fecha:isoOf(r.cuando), monto:amt, fuente:fte});
+    }
+  });
+  const keys = [...new Set([...Object.keys(income), ...Object.keys(exp)])].sort();
+  const data = keys.map(k=>{
+    const i=round2(income[k]||0), e=round2(exp[k]||0), net=round2(i-e);
+    const rp=round2(rP[k]||0), rj=round2(rJ[k]||0);
+    const m55=round2(net*0.55), j45=round2(net*0.45);
+    return {mes:friendly(k), alq:i, gas:e, util:net, madre:m55, jl:j45, rpapas:rp, rjl:rj, madreTot:round2(m55+rp), jlTot:round2(j45+rj)};
+  });
+  return {data, detalle, bookings, reservas:Object.values(resMap)};
+}
+
+// ============ LECTURA EN VIVO DEL GOOGLE SHEET (gviz, vía <script> = sin CORS) ============
+function parseGvizDate(v){
+  if(v==null) return null;
+  if(v instanceof Date) return v;
+  const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
+  return m ? new Date(+m[1], +m[2], +m[3]) : null;
+}
+function parseGviz(resp){
+  const out = [];
+  resp.table.rows.forEach(row=>{
+    const c = row.c || [];
+    const g = i => (c[i] && c[i].v != null) ? c[i].v : null;
+    const io = g(10);                       // K: Ingreso o Salida
+    if(!io) return;
+    out.push({
+      cuando: parseGvizDate(g(2)),          // C: Cuando fue la operación
+      desc:   g(3),                         // D: Descripción
+      asignado: g(6),                       // G: Movimiento asignado a
+      io: String(io).toUpperCase().trim(),
+      bal: Number(g(15)) || 0,              // P: balance S/
+      montoAlq: g(16),                      // Q: Monto del Alquiler
+      monAlq: g(17),                        // R: Moneda (alquiler)
+      garantia: g(18),                      // S: Monto de garantía
+      monGar: g(19),                        // T: Moneda (garantía)
+      desde: parseGvizDate(g(20)),          // U: Desde cuando
+      hasta: parseGvizDate(g(21)),          // V: Hasta cuando
+      fuente: g(25)                         // Z: Quien hizo el gasto?
+    });
+  });
+  return out;
+}
+let liveDone = false;
+function setBtn(loading){
+  const b = document.getElementById('btn-refresh');
+  b.disabled = loading;
+  b.textContent = loading ? '⏳ Cargando…' : '🔄 Actualizar';
+}
+function setStamp(live, msg){
+  const el = document.getElementById('stamp');
+  const hora = new Date().toLocaleTimeString('es-PE');
+  if(live){ el.innerHTML = '🟢 Datos en vivo del Google Sheet · cargados ' + hora; el.style.color = '#5cd6c0'; }
+  else { el.innerHTML = '🟡 Mostrando copia local (sin conexión al Sheet' + (msg?': '+esc(msg):'') + ')'; el.style.color = '#f0a868'; }
+  setBtn(false);
+}
+function loadLive(){
+  document.querySelectorAll('script.gviz').forEach(s=>s.remove());
+  const s = document.createElement('script');
+  s.className = 'gviz';
+  s.src = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json;responseHandler:gvizCb&headers=1&range=A5:AA2000&t='+Date.now();
+  s.onerror = () => { if(!liveDone) setStamp(false,'no se pudo conectar'); };
+  document.body.appendChild(s);
+}
+function refresh(){
+  liveDone = false;
+  setBtn(true);
+  const el = document.getElementById('stamp');
+  el.innerHTML = '⏳ Actualizando desde el Google Sheet…'; el.style.color = '';
+  loadLive();
+  setTimeout(()=>{ if(!liveDone) setStamp(false,'tiempo de espera agotado'); }, 9000);
+}
+window.gvizCb = function(resp){
+  liveDone = true;
+  try{
+    if(!resp || !resp.table || !resp.table.rows || !resp.table.rows.length) throw new Error('sin filas');
+    const {data, detalle, bookings, reservas} = computeFromRows(parseGviz(resp));
+    if(!data.length) throw new Error('sin datos');
+    render(data, detalle, bookings, reservas); setStamp(true);
+  }catch(e){ render(dataFallback, detalleFallback, bookingsFallback, reservasFallback); setStamp(false, e.message); }
+};
+
+// ============ RENDER ============
+let DETALLE = [];
+function render(data, detalle, bookings, reservas){
+  DETALLE = detalle;
+  renderCalendars(bookings || []);
+  renderReservas(reservas || []);
+  const T = data.reduce((a,r)=>({alq:a.alq+r.alq,gas:a.gas+r.gas,util:a.util+r.util,madre:a.madre+r.madre,jl:a.jl+r.jl,
+    rpapas:a.rpapas+r.rpapas,rjl:a.rjl+r.rjl,madreTot:a.madreTot+r.madreTot,jlTot:a.jlTot+r.jlTot}),
+    {alq:0,gas:0,util:0,madre:0,jl:0,rpapas:0,rjl:0,madreTot:0,jlTot:0});
+
+  document.getElementById('kpis').innerHTML = `
+    <div class="card kpi"><div class="label">Utilidad neta total</div><div class="val${neg(T.util)}">${fmt(T.util)}</div><div class="pill">Alquileres ${fmt(T.alq)} − Gastos ${fmt(T.gas)}</div></div>
+    <div class="card kpi"><div class="label">Madre recibe (total)</div><div class="val madre">${fmt(T.madreTot)}</div><div class="pill">55% utilidad + reemb. Papás ${fmt(T.rpapas)}</div></div>
+    <div class="card kpi"><div class="label">Jose Luis recibe (total)</div><div class="val jl">${fmt(T.jlTot)}</div><div class="pill">45% utilidad + reemb. propio ${fmt(T.rjl)}</div></div>
+    <div class="card kpi"><div class="label">A repartir (caja)</div><div class="val" style="color:var(--alq)">${fmt(T.madreTot+T.jlTot)}</div><div class="pill">${data.length} meses con movimiento</div></div>`;
+
+  const lk = (val, mes, tipo) => val ? `class="num link" onclick="openModal('${mes}','${tipo}')"` : 'class="num"';
+  document.querySelector('#tbl tbody').innerHTML = data.map(r=>`
+    <tr><td>${r.mes}</td>
+      <td ${lk(r.alq, r.mes, 'INGRESO')}>${fmt(r.alq)}</td>
+      <td ${lk(r.gas, r.mes, 'SALIDA')}>${fmt(r.gas)}</td>
+      <td class="num util${neg(r.util)}">${fmt(r.util)}</td>
+      <td class="num madre-c${neg(r.madre)}">${fmt(r.madre)}</td>
+      <td class="num">${r.rpapas?fmt(r.rpapas):'—'}</td>
+      <td class="num madre-c${neg(r.madreTot)}"><b>${fmt(r.madreTot)}</b></td>
+      <td class="num jl-c${neg(r.jl)}">${fmt(r.jl)}</td>
+      <td class="num">${r.rjl?fmt(r.rjl):'—'}</td>
+      <td class="num jl-c${neg(r.jlTot)}"><b>${fmt(r.jlTot)}</b></td></tr>`).join('');
+  document.querySelector('#tbl tfoot').innerHTML = `
+    <tr><td>TOTAL</td>
+      <td class="num">${fmt(T.alq)}</td>
+      <td class="num">${fmt(T.gas)}</td>
+      <td class="num${neg(T.util)}">${fmt(T.util)}</td>
+      <td class="num madre-c">${fmt(T.madre)}</td>
+      <td class="num">${T.rpapas?fmt(T.rpapas):'—'}</td>
+      <td class="num madre-c">${fmt(T.madreTot)}</td>
+      <td class="num jl-c">${fmt(T.jl)}</td>
+      <td class="num">${T.rjl?fmt(T.rjl):'—'}</td>
+      <td class="num jl-c">${fmt(T.jlTot)}</td></tr>`;
+
+  const max = Math.max(1, ...data.map(r=>Math.max(Math.abs(r.madreTot),Math.abs(r.jlTot))));
+  document.getElementById('bars').innerHTML = data.map(r=>`
+    <div class="barrow">
+      <span class="m">${r.mes.split(' ')[0]}</span>
+      <div class="barstack">
+        <div class="bar madre" style="width:${Math.max(8,Math.abs(r.madreTot)/max*100)}%">${fmt(r.madreTot)}</div>
+        <div class="bar jl" style="width:${Math.max(8,Math.abs(r.jlTot)/max*100)}%">${fmt(r.jlTot)}</div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('totals').innerHTML = `
+    <div style="display:flex;justify-content:space-between;padding:7px 0"><span style="color:var(--muted)">Utilidad neta total</span><span class="num${neg(T.util)}">${fmt(T.util)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line)"><span class="madre-c">Madre · 55% utilidad</span><span class="num madre-c">${fmt(T.madre)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:7px 0"><span class="madre-c">Madre · reemb. Papás</span><span class="num madre-c">${fmt(T.rpapas)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)"><span class="madre-c"><b>Madre recibe</b></span><span class="num madre-c" style="font-size:20px"><b>${fmt(T.madreTot)}</b></span></div>
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line)"><span class="jl-c">Jose Luis · 45% utilidad</span><span class="num jl-c">${fmt(T.jl)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:7px 0"><span class="jl-c">Jose Luis · reemb. propio</span><span class="num jl-c">${fmt(T.rjl)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)"><span class="jl-c"><b>Jose Luis recibe</b></span><span class="num jl-c" style="font-size:20px"><b>${fmt(T.jlTot)}</b></span></div>
+    <div class="ratio"><div class="s55"></div><div class="s45"></div></div>`;
+
+  document.getElementById('foot-note').innerHTML =
+    'Alquileres imputados al <b>mes de la estadía</b> (no al de cobro), prorrateados por días si cruzan de mes; pagos en dólares ya convertidos a soles al TC del momento. ' +
+    'Gastos al mes de operación; la devolución de garantía cuenta como gasto. ' +
+    '<b>Reembolsos:</b> si un gasto lo adelantó Papás se le devuelve a Madre, y si lo adelantó Jose Luis se le devuelve a él (según la columna «Quien hizo el gasto?»). ' +
+    'Cada uno recibe su % de utilidad + lo que adelantó. ' +
+    '<br><span class="tag">🔄 Se lee del Google Sheet en vivo al abrir o presionar F5.</span> ' +
+    '<span class="tag">💡 Haz clic en los montos de Alquileres o Gastos para ver el detalle.</span>';
+}
+
+// ============ Calendario de disponibilidad ============
+const DOW = ['L','M','M','J','V','S','D'];
+const parseISO = s => { const p = String(s).split('-'); return new Date(+p[0], +p[1]-1, +p[2]); };
+const isoKey = d => d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+function buildOccupied(bookings){
+  const occ = {};
+  (bookings||[]).forEach(b=>{
+    if(!b.start || !b.end) return;
+    const d0 = parseISO(b.start), d1 = parseISO(b.end);
+    for(let d=new Date(d0); d<=d1; d.setDate(d.getDate()+1)){ const k=isoKey(d); (occ[k]=occ[k]||[]).push(b.label); }
+  });
+  return occ;
+}
+function renderCalendars(bookings){
+  const occ = buildOccupied(bookings);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tk = isoKey(today);
+  let html = '';
+  for(let i=0;i<3;i++){
+    const first = new Date(today.getFullYear(), today.getMonth()+i, 1);
+    const y=first.getFullYear(), mo=first.getMonth();
+    const daysIn = new Date(y, mo+1, 0).getDate();
+    const startDow = (first.getDay()+6)%7;   // lunes = 0
+    html += `<div class="cal"><div class="calhd">${MESES[mo+1]} ${y}</div><div class="calgrid">`;
+    DOW.forEach(d=> html += `<div class="dow">${d}</div>`);
+    for(let s=0;s<startDow;s++) html += '<div></div>';
+    for(let day=1; day<=daysIn; day++){
+      const d = new Date(y, mo, day), k = isoKey(d);
+      let cls='cell', title='';
+      if(occ[k]){ cls+=' occ'; title=[...new Set(occ[k])].join(', '); }
+      else if(d<today){ cls+=' past'; }
+      else { cls+=' free'; }
+      if(k===tk) cls+=' today';
+      html += `<div class="${cls}" title="${esc(title)}">${day}</div>`;
+    }
+    html += '</div></div>';
+  }
+  document.getElementById('calendars').innerHTML = html;
+}
+
+// ============ Lista de reservas ============
+const fmtDMY = iso => { const p = String(iso).split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
+function money(m, cur){
+  if(m==null) return '—';
+  const c = String(cur||'').toLowerCase();
+  const sym = (c.includes('dol') || c.includes('dól') || c.includes('$') || c.includes('usd')) ? 'US$' : 'S/';
+  return sym + ' ' + Number(m).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function renderReservas(reservas){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const rows = (reservas||[]).map(r=>{
+    const d0 = parseISO(r.start), d1 = parseISO(r.end);
+    const nights = Math.max(0, Math.round((d1 - d0)/86400000));
+    let estado, ord;
+    if(d1 < today){ estado='Cerrada'; ord=2; }
+    else if(d0 <= today && today <= d1){ estado='Current'; ord=0; }
+    else { estado='Próxima'; ord=1; }
+    let alq;
+    if(r.alqMonto!=null){
+      alq = money(r.alqMonto, r.alqMon) + ' <span class="tagp pact">pactado</span>'
+          + '<div class="submuted">pagado ' + money(r.paid,'Soles') + '</div>';
+    } else {
+      alq = money(r.paid, 'Soles') + ' <span class="tagp pago">pagado</span>';
+    }
+    const gar = money(r.garMonto, r.garMon);
+    const mes = friendly(keyOf(d0));
+    return {label:r.label, start:r.start, end:r.end, nights, estado, ord, alq, gar, mes, d0};
+  }).sort((a,b)=> (a.ord-b.ord) || (a.d0-b.d0));
+  const badge = e => e==='Cerrada' ? '<span class="bdg bclosed">Cerrada</span>'
+                   : e==='Current' ? '<span class="bdg bcur">● Current</span>'
+                   : '<span class="bdg bnext">Próxima</span>';
+  if(!rows.length){ document.getElementById('reservas').innerHTML = '<div class="note" style="margin:0">No hay reservas registradas.</div>'; return; }
+  let html = '<div style="overflow-x:auto"><table><thead><tr><th>Reserva</th><th>Mes</th><th>Estado</th><th>Fechas</th><th>Noches</th><th style="text-align:right">Monto alquiler</th><th style="text-align:right">Garantía</th></tr></thead><tbody>';
+  rows.forEach(r=>{ html += `<tr>
+    <td>${esc(r.label)}</td>
+    <td>${esc(r.mes)}</td>
+    <td>${badge(r.estado)}</td>
+    <td>${fmtDMY(r.start)} – ${fmtDMY(r.end)}</td>
+    <td class="num">${r.nights}</td>
+    <td class="num" style="text-align:right">${r.alq}</td>
+    <td class="num" style="text-align:right">${r.gar}</td></tr>`; });
+  html += '</tbody></table></div>';
+  document.getElementById('reservas').innerHTML = html;
+}
+
+// Render inmediato con la copia local, luego intenta los datos en vivo
+render(dataFallback, detalleFallback, bookingsFallback, reservasFallback);
+refresh();
+
+// ============ Ventanas de detalle ============
+function openModal(mes, tipo) {
+  const rows = DETALLE.filter(d=>d.mes===mes && d.tipo===tipo);
+  const total = rows.reduce((a,r)=>a+r.monto,0);
+  let html = '';
+  if (tipo === 'INGRESO') {
+    document.getElementById('m-title').textContent = '🏠 Alquileres · ' + mes;
+    document.getElementById('m-sub').textContent = 'Agrupado por «Movimiento asignado a» · fecha = estadía (desde – hasta)';
+    const groups = {};
+    rows.forEach(r=>{ (groups[r.asignado] = groups[r.asignado] || []).push(r); });
+    html = '<table><thead><tr><th>Asignado a</th><th>Detalle</th><th>Fecha (estadía)</th><th style="text-align:right">Monto</th></tr></thead><tbody>';
+    Object.keys(groups).sort().forEach(g=>{
+      const list = groups[g];
+      const sub = list.reduce((a,r)=>a+r.monto,0);
+      html += `<tr class="grphead"><td colspan="3">${esc(g)}</td><td style="text-align:right">${fmt(sub)}</td></tr>`;
+      list.forEach(r=>{ html += `<tr><td></td><td>${esc(r.desc)}</td><td>${esc(r.fecha)}</td><td class="num" style="text-align:right">${fmt(r.monto)}</td></tr>`; });
+      if (list.length > 1) html += `<tr class="subtot"><td colspan="2">Subtotal ${esc(g)}</td><td></td><td class="num" style="text-align:right">${fmt(sub)}</td></tr>`;
+    });
+    html += `<tr class="grand"><td colspan="3">TOTAL ALQUILERES</td><td class="num" style="text-align:right">${fmt(total)}</td></tr>`;
+    html += '</tbody></table>';
+  } else {
+    document.getElementById('m-title').textContent = '💸 Gastos · ' + mes;
+    document.getElementById('m-sub').textContent = 'Detalle de gastos del mes · fecha = operación';
+    html = '<table><thead><tr><th>Descripción</th><th>Fecha</th><th style="text-align:right">Monto</th><th>Quién realizó el gasto</th></tr></thead><tbody>';
+    rows.forEach(r=>{ html += `<tr><td>${esc(r.desc)}</td><td>${esc(r.fecha)}</td><td class="num" style="text-align:right">${fmt(r.monto)}</td><td><span class="tag">${esc(r.fuente)}</span></td></tr>`; });
+    html += `<tr class="grand"><td colspan="2">TOTAL GASTOS</td><td class="num" style="text-align:right">${fmt(total)}</td><td></td></tr>`;
+    html += '</tbody></table>';
+  }
+  document.getElementById('m-body').innerHTML = html;
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+</script>
+</body>
+</html>
