@@ -69,6 +69,10 @@
   .bclosed{background:#34405a;color:#9aa7bd}
   .bcur{background:rgba(92,214,192,.22);color:#6ee7d2}
   .bnext{background:rgba(79,156,249,.2);color:#8fc0ff}
+  .pin{width:92px;background:#141b28;border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:5px 8px;font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
+  .pin:focus{outline:1px solid var(--accent)}
+  .btn2{font-size:11px;color:var(--muted);background:var(--card2);border:1px solid var(--line);padding:4px 10px;border-radius:8px;cursor:pointer}
+  .btn2:hover{color:var(--txt)}
   .tagp{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;vertical-align:middle;margin-left:4px}
   .tagp.pact{background:rgba(79,156,249,.2);color:#8fc0ff}
   .tagp.pago{background:rgba(240,168,104,.2);color:#f0c08a}
@@ -139,6 +143,21 @@
   </div>
 
   <div class="section card">
+    <h2 style="display:flex;align-items:center;justify-content:space-between">🔮 Proyección · mes en curso y próximo <button class="btn2" onclick="projReset()">↺ Restablecer estimados</button></h2>
+    <div class="note" style="margin-top:0;margin-bottom:12px">
+      <b>Total reservas</b> = <b>Monto del Alquiler</b> pactado de cada reserva del mes (en soles tal cual; en dólares convertido a soles con el TC de la reserva o, si no tiene, el TC promedio). Si una reserva no tiene monto pactado en el Sheet, se usa lo pagado. Clic en el monto para ver el detalle.
+      <b>Gastos Angel</b> estimado = por cada reserva del mes: S/100 limpieza de piscina + S/170 limpieza pre/post + S/30 insumos casa + S/30 insumos piscina (= S/330) + S/90 de internet mensual.
+      <b>Luz</b>: pago real del mes si ya existe; si no, promedio mensual histórico. Los campos de gastos se pueden <b>editar a mano</b> y la utilidad se recalcula al instante (tus ediciones quedan guardadas en este navegador).
+    </div>
+    <div style="overflow-x:auto">
+    <table id="proj-tbl">
+      <thead><tr><th>Mes</th><th>Total reservas (S/)</th><th>Gastos Angel (S/)</th><th>Luz (S/)</th><th>Utilidad proyectada</th><th>Madre (55%)</th><th>Jose Luis (45%)</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="section card">
     <h2>🗓️ Reservas</h2>
     <div class="note" style="margin-top:0;margin-bottom:12px">Estado según la fecha de hoy · <b>Monto alquiler</b>: <span class="tagp pact">pactado</span> = monto del alquiler declarado en el Sheet (con lo pagado debajo) · <span class="tagp pago">pagado</span> = no se declaró monto, se muestra lo efectivamente recibido.</div>
     <div id="reservas"></div>
@@ -173,11 +192,13 @@ const SHEET_ID = '1GnOj95ZJoH5WlhFtssfHECbHG5ITikHzTpDYJO5Iivc';
 // Copia local (snapshot generado por actualizar-dashboard.ps1) — se usa si no hay internet
 const dataFallback = [
   {mes:'Junio 2026', alq:4286.25, gas:2859.4, util:1426.85, madre:784.77, jl:642.08, rpapas:0, rjl:183.6, madreTot:784.77, jlTot:825.68},
-  {mes:'Julio 2026', alq:4845, gas:0, util:4845, madre:2664.75, jl:2180.25, rpapas:0, rjl:0, madreTot:2664.75, jlTot:2180.25},
+  {mes:'Julio 2026', alq:6770, gas:237.8, util:6532.2, madre:3592.71, jl:2939.49, rpapas:0, rjl:0, madreTot:3592.71, jlTot:2939.49},
   {mes:'Agosto 2026', alq:1256.25, gas:0, util:1256.25, madre:690.94, jl:565.31, rpapas:0, rjl:0, madreTot:690.94, jlTot:565.31},
   {mes:'Octubre 2026', alq:2125, gas:0, util:2125, madre:1168.75, jl:956.25, rpapas:0, rjl:0, madreTot:1168.75, jlTot:956.25},
 ];
 const detalleFallback = [
+  {mes:'Julio 2026', tipo:'INGRESO', asignado:'Paola Carbajal', desc:'Reserva Paola Carbajal', fecha:'2026-07-21 - 2026-07-24', monto:962.5, fuente:''},
+  {mes:'Julio 2026', tipo:'INGRESO', asignado:'Paola Carbajal', desc:'Reserva Paola Carbajal', fecha:'2026-07-27 - 2026-07-29', monto:962.5, fuente:''},
   {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'Gastos de Angel', fecha:'2026-06-28', monto:1682, fuente:'Cuentas Cieneguilla'},
   {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'comision transferencia bbva', fecha:'2026-06-28', monto:5.8, fuente:'Cuentas Cieneguilla'},
   {mes:'Junio 2026', tipo:'SALIDA', asignado:'Geovana Campos', desc:'devolución garantía', fecha:'2026-06-26', monto:59, fuente:'Cuentas Cieneguilla'},
@@ -185,15 +206,18 @@ const detalleFallback = [
   {mes:'Junio 2026', tipo:'INGRESO', asignado:'Geovana Campos', desc:'Saldo alquiler', fecha:'2026-06-19 - 2026-06-21', monto:1225, fuente:''},
   {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'Luz Junio', fecha:'2026-06-19', monto:238, fuente:'Cuentas Cieneguilla'},
   {mes:'Junio 2026', tipo:'INGRESO', asignado:'Catherine Moreno', desc:'Reserva Catherine Moreno', fecha:'2026-06-26 - 2026-06-29', monto:2261.25, fuente:''},
+  {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'Manychat', fecha:'2026-06-12', monto:183.6, fuente:'Jose Luis'},
   {mes:'Julio 2026', tipo:'INGRESO', asignado:'Fiorella Alvarez', desc:'Reserva Fiorella Alvarez', fecha:'2026-07-25 - 2026-07-27', monto:2210, fuente:''},
   {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'saldo de pago a Angel de Mayo', fecha:'2026-06-01', monto:691, fuente:'Cuentas Cieneguilla'},
   {mes:'Agosto 2026', tipo:'INGRESO', asignado:'Diana Alvarado', desc:'Reserva Diana Alvarado', fecha:'2026-08-28 - 2026-08-30', monto:1256.25, fuente:''},
   {mes:'Julio 2026', tipo:'INGRESO', asignado:'Catherine Moreno', desc:'reserva Catherine Moreno', fecha:'2026-07-17 - 2026-07-19', monto:1955, fuente:''},
   {mes:'Junio 2026', tipo:'INGRESO', asignado:'Geovana Campos', desc:'Reserva Geovana Campos', fecha:'2026-06-19 - 2026-06-21', monto:800, fuente:''},
   {mes:'Octubre 2026', tipo:'INGRESO', asignado:'Giuseppe Gamarra', desc:'Reserva Giussepe', fecha:'2026-10-19 - 2026-10-26', monto:2125, fuente:''},
-  {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'Manychat', fecha:'2026-06-12', monto:183.6, fuente:'Jose Luis'},
+  {mes:'Julio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'Luz', fecha:'2026-07-08', monto:237.8, fuente:'Cuentas Cieneguilla'},
 ];
 const bookingsFallback = [
+  {start:'2026-07-21', end:'2026-07-24', label:'Paola Carbajal'},
+  {start:'2026-07-27', end:'2026-07-29', label:'Paola Carbajal'},
   {start:'2026-07-10', end:'2026-07-12', label:'Geo Carrera'},
   {start:'2026-06-19', end:'2026-06-21', label:'Geovana Campos'},
   {start:'2026-06-26', end:'2026-06-29', label:'Catherine Moreno'},
@@ -204,13 +228,15 @@ const bookingsFallback = [
   {start:'2026-10-19', end:'2026-10-26', label:'Giuseppe Gamarra'},
 ];
 const reservasFallback = [
-  {label:'Geovana Campos', start:'2026-06-19', end:'2026-06-21', paid:2025, alqMonto:null, alqMon:null, garMonto:null, garMon:null},
-  {label:'Catherine Moreno', start:'2026-06-26', end:'2026-06-29', paid:2261.25, alqMonto:null, alqMon:null, garMonto:null, garMon:null},
-  {label:'Geo Carrera', start:'2026-07-10', end:'2026-07-12', paid:680, alqMonto:null, alqMon:null, garMonto:null, garMon:null},
-  {label:'Catherine Moreno', start:'2026-07-17', end:'2026-07-19', paid:1955, alqMonto:null, alqMon:null, garMonto:null, garMon:null},
-  {label:'Fiorella Alvarez', start:'2026-07-25', end:'2026-07-27', paid:2210, alqMonto:null, alqMon:null, garMonto:null, garMon:null},
-  {label:'Diana Alvarado', start:'2026-08-28', end:'2026-08-30', paid:1256.25, alqMonto:null, alqMon:null, garMonto:null, garMon:null},
-  {label:'Giuseppe Gamarra', start:'2026-10-19', end:'2026-10-26', paid:2125, alqMonto:1050, alqMon:'Dólares', garMonto:150, garMon:'Dólares'},
+  {label:'Geovana Campos', start:'2026-06-19', end:'2026-06-21', paid:2025, alqMonto:1925, alqMon:'soles', garMonto:100, garMon:'soles', tc:null},
+  {label:'Catherine Moreno', start:'2026-06-26', end:'2026-06-29', paid:2261.25, alqMonto:575, alqMon:'Dólares', garMonto:100, garMon:'dólares', tc:3.35},
+  {label:'Geo Carrera', start:'2026-07-10', end:'2026-07-12', paid:680, alqMonto:550, alqMon:'Dólares', garMonto:100, garMon:'Dólares', tc:3.4},
+  {label:'Catherine Moreno', start:'2026-07-17', end:'2026-07-19', paid:1955, alqMonto:475, alqMon:'Dólares', garMonto:100, garMon:'Dólares', tc:3.4},
+  {label:'Paola Carbajal', start:'2026-07-21', end:'2026-07-24', paid:962.5, alqMonto:450, alqMon:'Dólares', garMonto:100, garMon:'Dólares', tc:3.85},
+  {label:'Fiorella Alvarez', start:'2026-07-25', end:'2026-07-27', paid:2210, alqMonto:550, alqMon:'Dólares', garMonto:100, garMon:'dólares', tc:3.4},
+  {label:'Paola Carbajal', start:'2026-07-27', end:'2026-07-29', paid:962.5, alqMonto:550, alqMon:'Dólares', garMonto:100, garMon:'Dólares', tc:3.85},
+  {label:'Diana Alvarado', start:'2026-08-28', end:'2026-08-30', paid:1256.25, alqMonto:550, alqMon:'Dólares', garMonto:200, garMon:'dólares', tc:3.35},
+  {label:'Giuseppe Gamarra', start:'2026-10-19', end:'2026-10-26', paid:2125, alqMonto:1050, alqMon:'Dólares', garMonto:150, garMon:'Dólares', tc:null},
 ];
 
 // ============ CÁLCULO (mismo criterio que el script PowerShell) ============
@@ -243,10 +269,11 @@ function computeFromRows(rows){
         bookings.push({start:isoOf(r.desde), end:isoOf(r.hasta), label});
         const rk = label+'|'+isoOf(r.desde)+'|'+isoOf(r.hasta);
         let R = resMap[rk];
-        if(!R){ R = resMap[rk] = {label, start:isoOf(r.desde), end:isoOf(r.hasta), paid:0, alqMonto:null, alqMon:null, garMonto:null, garMon:null}; }
+        if(!R){ R = resMap[rk] = {label, start:isoOf(r.desde), end:isoOf(r.hasta), paid:0, alqMonto:null, alqMon:null, garMonto:null, garMon:null, tc:null}; }
         R.paid = round2(R.paid + r.bal);
         if(r.montoAlq!=null && String(r.montoAlq).trim()!==''){ R.alqMonto = Number(r.montoAlq); R.alqMon = r.monAlq; }
         if(r.garantia!=null && String(r.garantia).trim()!==''){ R.garMonto = Number(r.garantia); R.garMon = r.monGar; }
+        if(r.tc!=null && String(r.tc).trim()!==''){ R.tc = Number(r.tc); }
       }
     } else if(r.io === 'SALIDA'){
       if(!r.cuando) return;
@@ -287,6 +314,7 @@ function parseGviz(resp){
       desc:   g(3),                         // D: Descripción
       asignado: g(6),                       // G: Movimiento asignado a
       io: String(io).toUpperCase().trim(),
+      tc: g(8),                             // I: TC (tipo de cambio)
       bal: Number(g(15)) || 0,              // P: balance S/
       montoAlq: g(16),                      // Q: Monto del Alquiler
       monAlq: g(17),                        // R: Moneda (alquiler)
@@ -339,11 +367,14 @@ window.gvizCb = function(resp){
 };
 
 // ============ RENDER ============
-let DETALLE = [];
+let DETALLE = [], DATA = [], RESERVAS = [];
 function render(data, detalle, bookings, reservas){
   DETALLE = detalle;
+  DATA = data;
+  RESERVAS = reservas || [];
   renderCalendars(bookings || []);
   renderReservas(reservas || []);
+  renderProyeccion();
   const T = data.reduce((a,r)=>({alq:a.alq+r.alq,gas:a.gas+r.gas,util:a.util+r.util,madre:a.madre+r.madre,jl:a.jl+r.jl,
     rpapas:a.rpapas+r.rpapas,rjl:a.rjl+r.rjl,madreTot:a.madreTot+r.madreTot,jlTot:a.jlTot+r.jlTot}),
     {alq:0,gas:0,util:0,madre:0,jl:0,rpapas:0,rjl:0,madreTot:0,jlTot:0});
@@ -490,6 +521,113 @@ function renderReservas(reservas){
     <td class="num" style="text-align:right">${r.gar}</td></tr>`; });
   html += '</tbody></table></div>';
   document.getElementById('reservas').innerHTML = html;
+}
+
+// ============ Proyección (mes en curso + próximo) ============
+const COSTO_POR_RESERVA = 100 + 170 + 30 + 30;  // piscina + limpieza pre/post + insumos casa + insumos piscina
+const INTERNET_MENSUAL = 90;
+const PROJ_KEY = 'cieneguilla_proj_overrides';
+function projOverrides(){ try{ return JSON.parse(localStorage.getItem(PROJ_KEY)||'{}'); }catch(e){ return {}; } }
+function projSave(mk, field, val){
+  const o = projOverrides(); o[mk] = o[mk] || {}; o[mk][field] = val;
+  try{ localStorage.setItem(PROJ_KEY, JSON.stringify(o)); }catch(e){}
+}
+function luzInfo(mesName){
+  const pagos = DETALLE.filter(d=>d.tipo==='SALIDA' && /luz/i.test(d.desc||''));
+  const delMes = pagos.filter(d=>d.mes===mesName);
+  if(delMes.length) return {monto: round2(delMes.reduce((a,r)=>a+r.monto,0)), tipo:'pago real del mes'};
+  const porMes = {};
+  pagos.forEach(p=>{ porMes[p.mes]=(porMes[p.mes]||0)+p.monto; });
+  const vals = Object.values(porMes);
+  return {monto: vals.length ? round2(vals.reduce((a,b)=>a+b,0)/vals.length) : 0, tipo:'promedio mensual estimado'};
+}
+const esDolar = c => { const s = String(c||'').toLowerCase(); return s.includes('dol') || s.includes('dól') || s.includes('usd') || s.includes('$'); };
+function tcPromedio(){
+  const tcs = RESERVAS.map(r=>r.tc).filter(t=>t!=null && t>0);
+  return tcs.length ? round2(tcs.reduce((a,b)=>a+b,0)/tcs.length) : 3.5;
+}
+// Monto proyectado de una reserva en soles: MONTO DEL ALQUILER pactado (convertido si es US$); si no hay pactado, lo pagado
+function projMontoReserva(r, tcAvg){
+  if(r.alqMonto!=null){
+    if(esDolar(r.alqMon)){
+      const tc = (r.tc!=null && r.tc>0) ? r.tc : tcAvg;
+      return {monto: round2(r.alqMonto*tc), origen: 'pactado US$ '+r.alqMonto.toLocaleString('es-PE')+' × TC '+tc};
+    }
+    return {monto: round2(r.alqMonto), origen: 'pactado en soles'};
+  }
+  return {monto: round2(r.paid), origen: 'pagado (sin monto pactado)'};
+}
+let PROJ_INFO = [];
+function renderProyeccion(){
+  const today = new Date();
+  const ov = projOverrides();
+  const tcAvg = tcPromedio();
+  PROJ_INFO = [];
+  let html = '';
+  for(let i=0;i<2;i++){
+    const first = new Date(today.getFullYear(), today.getMonth()+i, 1);
+    const mk = keyOf(first), mesName = friendly(mk);
+    // Ingresos proyectados: monto del alquiler de cada reserva, prorrateado por días si cruza de mes
+    const breakdown = [];
+    RESERVAS.forEach(r=>{
+      if(!r.start || !r.end) return;
+      const {monto, origen} = projMontoReserva(r, tcAvg);
+      const a = allocByMonth(parseISO(r.start), parseISO(r.end), monto);
+      if(a && a[mk]){ breakdown.push({label:r.label, fechas: fmtDMY(r.start)+' – '+fmtDMY(r.end), monto:a[mk], origen}); }
+    });
+    const totalRes = round2(breakdown.reduce((a,b)=>a+b.monto,0));
+    const nRes = RESERVAS.filter(r=> r.start && r.start.slice(0,7)===mk).length;
+    const angelDef = round2(nRes*COSTO_POR_RESERVA + INTERNET_MENSUAL);
+    const luz = luzInfo(mesName);
+    const angelVal = (ov[mk] && ov[mk].angel!=null) ? ov[mk].angel : angelDef;
+    const luzVal   = (ov[mk] && ov[mk].luz!=null)   ? ov[mk].luz   : luz.monto;
+    PROJ_INFO.push({mk, mesName, totalRes, breakdown});
+    html += `<tr>
+      <td>${esc(mesName)} ${i===0?'<span class="tagp pact">en curso</span>':'<span class="tagp pago">próximo</span>'}</td>
+      <td ${totalRes ? `class="num link" onclick="openProjModal(${i})"` : 'class="num"'}>${fmt(totalRes)}</td>
+      <td class="num"><input type="number" class="pin" id="proj-angel-${i}" value="${angelVal}" step="10" min="0" oninput="projEdit(${i},'angel',this.value)"><div class="submuted">${nRes} reserva${nRes===1?'':'s'} × S/${COSTO_POR_RESERVA} + S/${INTERNET_MENSUAL} internet</div></td>
+      <td class="num"><input type="number" class="pin" id="proj-luz-${i}" value="${luzVal}" step="10" min="0" oninput="projEdit(${i},'luz',this.value)"><div class="submuted">${luz.tipo}</div></td>
+      <td class="num" id="proj-util-${i}"></td>
+      <td class="num madre-c" id="proj-madre-${i}"></td>
+      <td class="num jl-c" id="proj-jl-${i}"></td>
+    </tr>`;
+  }
+  document.querySelector('#proj-tbl tbody').innerHTML = html;
+  projRecalc();
+}
+function projEdit(i, field, val){
+  projSave(PROJ_INFO[i].mk, field, Number(val)||0);
+  projRecalc();
+}
+function projRecalc(){
+  PROJ_INFO.forEach((x,i)=>{
+    const angel = Number(document.getElementById('proj-angel-'+i).value)||0;
+    const luz = Number(document.getElementById('proj-luz-'+i).value)||0;
+    const util = round2(x.totalRes - angel - luz);
+    const u = document.getElementById('proj-util-'+i);
+    u.textContent = fmt(util);
+    u.className = 'num util' + (util<0?' neg':'');
+    document.getElementById('proj-madre-'+i).textContent = fmt(round2(util*0.55));
+    document.getElementById('proj-jl-'+i).textContent = fmt(round2(util*0.45));
+  });
+}
+function projReset(){
+  const o = projOverrides();
+  PROJ_INFO.forEach(x=>{ delete o[x.mk]; });
+  try{ localStorage.setItem(PROJ_KEY, JSON.stringify(o)); }catch(e){}
+  renderProyeccion();
+}
+function openProjModal(i){
+  const x = PROJ_INFO[i];
+  if(!x) return;
+  document.getElementById('m-title').textContent = '🔮 Ingresos proyectados · ' + x.mesName;
+  document.getElementById('m-sub').textContent = 'Monto del alquiler pactado (US$ convertido a soles); si la reserva cruza de mes, se muestra solo la parte de este mes';
+  let html = '<table><thead><tr><th>Reserva</th><th>Fechas</th><th>Origen del monto</th><th style="text-align:right">Monto (S/)</th></tr></thead><tbody>';
+  x.breakdown.forEach(b=>{ html += `<tr><td>${esc(b.label)}</td><td>${esc(b.fechas)}</td><td><span class="tag">${esc(b.origen)}</span></td><td class="num" style="text-align:right">${fmt(b.monto)}</td></tr>`; });
+  html += `<tr class="grand"><td colspan="3">TOTAL PROYECTADO</td><td class="num" style="text-align:right">${fmt(x.totalRes)}</td></tr>`;
+  html += '</tbody></table>';
+  document.getElementById('m-body').innerHTML = html;
+  document.getElementById('overlay').classList.add('open');
 }
 
 // Render inmediato con la copia local, luego intenta los datos en vivo
