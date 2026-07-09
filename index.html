@@ -69,6 +69,12 @@
   .bclosed{background:#34405a;color:#9aa7bd}
   .bcur{background:rgba(92,214,192,.22);color:#6ee7d2}
   .bnext{background:rgba(79,156,249,.2);color:#8fc0ff}
+  /* tabla rapida */
+  .qt th:first-child,.qt td:first-child{text-align:left;white-space:nowrap;color:var(--muted);font-size:12px}
+  .qt td{font-variant-numeric:tabular-nums}
+  .qt tr.hl td{background:rgba(79,156,249,.12);font-weight:700;color:var(--txt)}
+  .qt tr.hl td:first-child{color:var(--accent)}
+  .qt tr.res td{border-top:2px solid var(--line);font-weight:700}
   .pin{width:92px;background:#141b28;border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:5px 8px;font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
   .pin:focus{outline:1px solid var(--accent)}
   .btn2{font-size:11px;color:var(--muted);background:var(--card2);border:1px solid var(--line);padding:4px 10px;border-radius:8px;cursor:pointer}
@@ -107,7 +113,26 @@
     </div>
   </header>
 
-  <div class="grid kpis" id="kpis"></div>
+  <div class="section card">
+    <h2>⚡ Resumen rápido por mes</h2>
+    <div style="overflow-x:auto" id="quick"></div>
+    <div class="note">Cada reserva se asigna al mes en que <b>inicia</b>. <b>Reservas</b> = monto del alquiler pactado en soles (US$ convertido con el TC de la reserva o el promedio). <b>Garantías</b> = en soles (si fue en US$, se indica el monto original y el TC usado). <b>Pagado a la fecha</b> = lo realmente recibido en cuentas. <b>Garantía devuelta</b> = devoluciones ya registradas. <b>Resultado del mes</b> = Reservas + Garantías − Devolución de garantías.</div>
+  </div>
+
+  <div class="section card">
+    <h2 style="display:flex;align-items:center;justify-content:space-between">🔮 Proyección · próximos 6 meses <button class="btn2" onclick="projReset()">↺ Restablecer estimados</button></h2>
+    <div class="note" style="margin-top:0;margin-bottom:12px">
+      <b>Total reservas</b> = <b>Monto del Alquiler</b> pactado de cada reserva del mes (en soles tal cual; en dólares convertido a soles con el TC de la reserva o, si no tiene, el TC promedio). Si una reserva no tiene monto pactado en el Sheet, se usa lo pagado. Clic en el monto para ver el detalle.
+      <b>Gastos Angel</b> estimado = por cada reserva del mes: S/100 limpieza de piscina + S/170 limpieza pre/post + S/30 insumos casa + S/30 insumos piscina (= S/330) + S/90 de internet mensual.
+      <b>Luz</b>: pago real del mes si ya existe; si no, promedio mensual histórico. Los campos de gastos se pueden <b>editar a mano</b> y la utilidad se recalcula al instante (tus ediciones quedan guardadas en este navegador).
+    </div>
+    <div style="overflow-x:auto">
+    <table id="proj-tbl">
+      <thead><tr><th>Mes</th><th>Total reservas (S/)</th><th>Gastos Angel (S/)</th><th>Luz (S/)</th><th>Utilidad proyectada</th><th>Madre (55%)</th><th>Jose Luis (45%)</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    </div>
+  </div>
 
   <div class="section card">
     <h2>Cuadro mes a mes</h2>
@@ -143,21 +168,6 @@
   </div>
 
   <div class="section card">
-    <h2 style="display:flex;align-items:center;justify-content:space-between">🔮 Proyección · mes en curso y próximo <button class="btn2" onclick="projReset()">↺ Restablecer estimados</button></h2>
-    <div class="note" style="margin-top:0;margin-bottom:12px">
-      <b>Total reservas</b> = <b>Monto del Alquiler</b> pactado de cada reserva del mes (en soles tal cual; en dólares convertido a soles con el TC de la reserva o, si no tiene, el TC promedio). Si una reserva no tiene monto pactado en el Sheet, se usa lo pagado. Clic en el monto para ver el detalle.
-      <b>Gastos Angel</b> estimado = por cada reserva del mes: S/100 limpieza de piscina + S/170 limpieza pre/post + S/30 insumos casa + S/30 insumos piscina (= S/330) + S/90 de internet mensual.
-      <b>Luz</b>: pago real del mes si ya existe; si no, promedio mensual histórico. Los campos de gastos se pueden <b>editar a mano</b> y la utilidad se recalcula al instante (tus ediciones quedan guardadas en este navegador).
-    </div>
-    <div style="overflow-x:auto">
-    <table id="proj-tbl">
-      <thead><tr><th>Mes</th><th>Total reservas (S/)</th><th>Gastos Angel (S/)</th><th>Luz (S/)</th><th>Utilidad proyectada</th><th>Madre (55%)</th><th>Jose Luis (45%)</th></tr></thead>
-      <tbody></tbody>
-    </table>
-    </div>
-  </div>
-
-  <div class="section card">
     <h2>🗓️ Reservas</h2>
     <div class="note" style="margin-top:0;margin-bottom:12px">Estado según la fecha de hoy · <b>Monto alquiler</b>: <span class="tagp pact">pactado</span> = monto del alquiler declarado en el Sheet (con lo pagado debajo) · <span class="tagp pago">pagado</span> = no se declaró monto, se muestra lo efectivamente recibido.</div>
     <div id="reservas"></div>
@@ -171,6 +181,11 @@
       <span><span class="dot" style="background:rgba(240,122,122,.8)"></span>Ocupado (pasa el mouse para ver quién)</span>
       <span><span class="dot" style="background:#4d5a72"></span>Día pasado</span>
     </div>
+  </div>
+
+  <div class="section">
+    <h2 style="color:var(--muted)">Totales acumulados</h2>
+    <div class="grid kpis" id="kpis" style="margin-bottom:0"></div>
   </div>
 </div>
 
@@ -192,13 +207,13 @@ const SHEET_ID = '1GnOj95ZJoH5WlhFtssfHECbHG5ITikHzTpDYJO5Iivc';
 // Copia local (snapshot generado por actualizar-dashboard.ps1) — se usa si no hay internet
 const dataFallback = [
   {mes:'Junio 2026', alq:4286.25, gas:2859.4, util:1426.85, madre:784.77, jl:642.08, rpapas:0, rjl:183.6, madreTot:784.77, jlTot:825.68},
-  {mes:'Julio 2026', alq:6770, gas:237.8, util:6532.2, madre:3592.71, jl:2939.49, rpapas:0, rjl:0, madreTot:3592.71, jlTot:2939.49},
+  {mes:'Julio 2026', alq:6520, gas:237.8, util:6282.2, madre:3455.21, jl:2826.99, rpapas:0, rjl:0, madreTot:3455.21, jlTot:2826.99},
   {mes:'Agosto 2026', alq:1256.25, gas:0, util:1256.25, madre:690.94, jl:565.31, rpapas:0, rjl:0, madreTot:690.94, jlTot:565.31},
   {mes:'Octubre 2026', alq:2125, gas:0, util:2125, madre:1168.75, jl:956.25, rpapas:0, rjl:0, madreTot:1168.75, jlTot:956.25},
 ];
 const detalleFallback = [
-  {mes:'Julio 2026', tipo:'INGRESO', asignado:'Paola Carbajal', desc:'Reserva Paola Carbajal', fecha:'2026-07-21 - 2026-07-24', monto:962.5, fuente:''},
-  {mes:'Julio 2026', tipo:'INGRESO', asignado:'Paola Carbajal', desc:'Reserva Paola Carbajal', fecha:'2026-07-27 - 2026-07-29', monto:962.5, fuente:''},
+  {mes:'Julio 2026', tipo:'INGRESO', asignado:'Paola Carbajal', desc:'Reserva Paola Carbajal', fecha:'2026-07-21 - 2026-07-24', monto:837.5, fuente:''},
+  {mes:'Julio 2026', tipo:'INGRESO', asignado:'Paola Carbajal', desc:'Reserva Paola Carbajal', fecha:'2026-07-27 - 2026-07-29', monto:837.5, fuente:''},
   {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'Gastos de Angel', fecha:'2026-06-28', monto:1682, fuente:'Cuentas Cieneguilla'},
   {mes:'Junio 2026', tipo:'SALIDA', asignado:'CASA CIENEGUILLA', desc:'comision transferencia bbva', fecha:'2026-06-28', monto:5.8, fuente:'Cuentas Cieneguilla'},
   {mes:'Junio 2026', tipo:'SALIDA', asignado:'Geovana Campos', desc:'devolución garantía', fecha:'2026-06-26', monto:59, fuente:'Cuentas Cieneguilla'},
@@ -232,9 +247,9 @@ const reservasFallback = [
   {label:'Catherine Moreno', start:'2026-06-26', end:'2026-06-29', paid:2261.25, alqMonto:575, alqMon:'Dólares', garMonto:100, garMon:'dólares', tc:3.35},
   {label:'Geo Carrera', start:'2026-07-10', end:'2026-07-12', paid:680, alqMonto:550, alqMon:'Dólares', garMonto:100, garMon:'Dólares', tc:3.4},
   {label:'Catherine Moreno', start:'2026-07-17', end:'2026-07-19', paid:1955, alqMonto:475, alqMon:'Dólares', garMonto:100, garMon:'Dólares', tc:3.4},
-  {label:'Paola Carbajal', start:'2026-07-21', end:'2026-07-24', paid:962.5, alqMonto:450, alqMon:'Dólares', garMonto:100, garMon:'Dólares', tc:3.85},
+  {label:'Paola Carbajal', start:'2026-07-21', end:'2026-07-24', paid:837.5, alqMonto:450, alqMon:'Dólares', garMonto:100, garMon:'Dólares', tc:3.35},
   {label:'Fiorella Alvarez', start:'2026-07-25', end:'2026-07-27', paid:2210, alqMonto:550, alqMon:'Dólares', garMonto:100, garMon:'dólares', tc:3.4},
-  {label:'Paola Carbajal', start:'2026-07-27', end:'2026-07-29', paid:962.5, alqMonto:550, alqMon:'Dólares', garMonto:100, garMon:'Dólares', tc:3.85},
+  {label:'Paola Carbajal', start:'2026-07-27', end:'2026-07-29', paid:837.5, alqMonto:550, alqMon:'Dólares', garMonto:100, garMon:'Dólares', tc:3.35},
   {label:'Diana Alvarado', start:'2026-08-28', end:'2026-08-30', paid:1256.25, alqMonto:550, alqMon:'Dólares', garMonto:200, garMon:'dólares', tc:3.35},
   {label:'Giuseppe Gamarra', start:'2026-10-19', end:'2026-10-26', paid:2125, alqMonto:1050, alqMon:'Dólares', garMonto:150, garMon:'Dólares', tc:null},
 ];
@@ -375,6 +390,7 @@ function render(data, detalle, bookings, reservas){
   renderCalendars(bookings || []);
   renderReservas(reservas || []);
   renderProyeccion();
+  renderQuickTable();
   const T = data.reduce((a,r)=>({alq:a.alq+r.alq,gas:a.gas+r.gas,util:a.util+r.util,madre:a.madre+r.madre,jl:a.jl+r.jl,
     rpapas:a.rpapas+r.rpapas,rjl:a.rjl+r.rjl,madreTot:a.madreTot+r.madreTot,jlTot:a.jlTot+r.jlTot}),
     {alq:0,gas:0,util:0,madre:0,jl:0,rpapas:0,rjl:0,madreTot:0,jlTot:0});
@@ -564,7 +580,7 @@ function renderProyeccion(){
   const tcAvg = tcPromedio();
   PROJ_INFO = [];
   let html = '';
-  for(let i=0;i<2;i++){
+  for(let i=0;i<6;i++){
     const first = new Date(today.getFullYear(), today.getMonth()+i, 1);
     const mk = keyOf(first), mesName = friendly(mk);
     // Ingresos proyectados: monto del alquiler de cada reserva, prorrateado por días si cruza de mes
@@ -583,7 +599,7 @@ function renderProyeccion(){
     const luzVal   = (ov[mk] && ov[mk].luz!=null)   ? ov[mk].luz   : luz.monto;
     PROJ_INFO.push({mk, mesName, totalRes, breakdown});
     html += `<tr>
-      <td>${esc(mesName)} ${i===0?'<span class="tagp pact">en curso</span>':'<span class="tagp pago">próximo</span>'}</td>
+      <td>${esc(mesName)} ${i===0?'<span class="tagp pact">en curso</span>':''}</td>
       <td ${totalRes ? `class="num link" onclick="openProjModal(${i})"` : 'class="num"'}>${fmt(totalRes)}</td>
       <td class="num"><input type="number" class="pin" id="proj-angel-${i}" value="${angelVal}" step="10" min="0" oninput="projEdit(${i},'angel',this.value)"><div class="submuted">${nRes} reserva${nRes===1?'':'s'} × S/${COSTO_POR_RESERVA} + S/${INTERNET_MENSUAL} internet</div></td>
       <td class="num"><input type="number" class="pin" id="proj-luz-${i}" value="${luzVal}" step="10" min="0" oninput="projEdit(${i},'luz',this.value)"><div class="submuted">${luz.tipo}</div></td>
@@ -625,6 +641,89 @@ function openProjModal(i){
   let html = '<table><thead><tr><th>Reserva</th><th>Fechas</th><th>Origen del monto</th><th style="text-align:right">Monto (S/)</th></tr></thead><tbody>';
   x.breakdown.forEach(b=>{ html += `<tr><td>${esc(b.label)}</td><td>${esc(b.fechas)}</td><td><span class="tag">${esc(b.origen)}</span></td><td class="num" style="text-align:right">${fmt(b.monto)}</td></tr>`; });
   html += `<tr class="grand"><td colspan="3">TOTAL PROYECTADO</td><td class="num" style="text-align:right">${fmt(x.totalRes)}</td></tr>`;
+  html += '</tbody></table>';
+  document.getElementById('m-body').innerHTML = html;
+  document.getElementById('overlay').classList.add('open');
+}
+
+// ============ Tabla rápida por mes ============
+function mkFromFriendly(name){
+  const p = String(name).split(' ');
+  const m = MESES.indexOf(p[0]);
+  return m > 0 ? p[1] + '-' + pad2(m) : null;
+}
+let QT_INFO = {}, QT_GAR = {};
+function renderQuickTable(){
+  const tcAvg = tcPromedio();
+  const cols = {};
+  QT_INFO = {}; QT_GAR = {};
+  const cell = mk => cols[mk] = cols[mk] || {res:0, gar:0, paid:0, dev:0};
+  RESERVAS.forEach(r=>{
+    if(!r.start) return;
+    const mk = r.start.slice(0,7);
+    const c = cell(mk);
+    const pm = projMontoReserva(r, tcAvg);
+    c.res = round2(c.res + pm.monto);
+    const fechas = fmtDMY(r.start)+' – '+fmtDMY(r.end);
+    (QT_INFO[mk] = QT_INFO[mk] || []).push({label:r.label, fechas, monto:pm.monto, origen:pm.origen});
+    if(r.garMonto!=null){
+      let gSoles, gOrigen;
+      if(esDolar(r.garMon)){
+        const tc = (r.tc!=null && r.tc>0) ? r.tc : tcAvg;
+        gSoles = round2(r.garMonto*tc);
+        gOrigen = 'US$ '+r.garMonto.toLocaleString('es-PE')+' × TC '+tc;
+      } else { gSoles = round2(r.garMonto); gOrigen = 'en soles'; }
+      c.gar = round2(c.gar + gSoles);
+      (QT_GAR[mk] = QT_GAR[mk] || []).push({label:r.label, fechas, monto:gSoles, origen:gOrigen});
+    }
+    c.paid = round2(c.paid + r.paid);
+  });
+  DETALLE.forEach(d=>{
+    if(d.tipo==='SALIDA' && /garant/i.test(d.desc||'')){
+      const mk = mkFromFriendly(d.mes);
+      if(mk) cell(mk).dev = round2(cell(mk).dev + d.monto);
+    }
+  });
+  const keys = Object.keys(cols).sort();
+  if(!keys.length){ document.getElementById('quick').innerHTML = '<div class="note" style="margin:0">Sin reservas registradas.</div>'; return; }
+  const f0 = v => v ? fmt(v) : '—';
+  let html = '<table class="qt"><thead><tr><th>Mes</th>' + keys.map(k=>'<th>'+esc(friendly(k))+'</th>').join('') + '</tr></thead><tbody>';
+  html += '<tr class="hl"><td>Reservas (S/)</td>' + keys.map(k=>
+    cols[k].res ? '<td class="num link" onclick="openQtModal(\''+k+'\')">'+fmt(cols[k].res)+'</td>' : '<td class="num">—</td>'
+  ).join('') + '</tr>';
+  html += '<tr><td>Garantías (S/)</td>' + keys.map(k=>
+    cols[k].gar ? '<td class="num link" onclick="openQtGarModal(\''+k+'\')">'+fmt(cols[k].gar)+'</td>' : '<td class="num">—</td>'
+  ).join('') + '</tr>';
+  html += '<tr class="hl"><td>Pagado a la fecha (S/)</td>' + keys.map(k=>'<td class="num">'+f0(cols[k].paid)+'</td>').join('') + '</tr>';
+  html += '<tr><td>Garantía devuelta (S/)</td>' + keys.map(k=>'<td class="num">'+f0(cols[k].dev)+'</td>').join('') + '</tr>';
+  html += '<tr class="res"><td>Resultado del mes (S/)</td>' + keys.map(k=>{
+    const c = cols[k];
+    const v = round2(c.res + c.gar - c.dev);
+    return '<td class="num util'+(v<0?' neg':'')+'">'+fmt(v)+'</td>';
+  }).join('') + '</tr>';
+  html += '</tbody></table>';
+  document.getElementById('quick').innerHTML = html;
+}
+function openQtGarModal(mk){
+  const list = QT_GAR[mk] || [];
+  const total = round2(list.reduce((a,b)=>a+b.monto,0));
+  document.getElementById('m-title').textContent = '🛡️ Garantías · ' + friendly(mk);
+  document.getElementById('m-sub').textContent = 'Garantías de las reservas que inician en este mes · convertidas a soles';
+  let html = '<table><thead><tr><th>Reserva</th><th>Fechas</th><th>Garantía original</th><th style="text-align:right">Monto (S/)</th></tr></thead><tbody>';
+  list.forEach(b=>{ html += `<tr><td>${esc(b.label)}</td><td>${esc(b.fechas)}</td><td><span class="tag">${esc(b.origen)}</span></td><td class="num" style="text-align:right">${fmt(b.monto)}</td></tr>`; });
+  html += `<tr class="grand"><td colspan="3">TOTAL</td><td class="num" style="text-align:right">${fmt(total)}</td></tr>`;
+  html += '</tbody></table>';
+  document.getElementById('m-body').innerHTML = html;
+  document.getElementById('overlay').classList.add('open');
+}
+function openQtModal(mk){
+  const list = QT_INFO[mk] || [];
+  const total = round2(list.reduce((a,b)=>a+b.monto,0));
+  document.getElementById('m-title').textContent = '⚡ Reservas · ' + friendly(mk);
+  document.getElementById('m-sub').textContent = 'Reservas que inician en este mes · monto del alquiler en soles';
+  let html = '<table><thead><tr><th>Reserva</th><th>Fechas</th><th>Origen del monto</th><th style="text-align:right">Monto (S/)</th></tr></thead><tbody>';
+  list.forEach(b=>{ html += `<tr><td>${esc(b.label)}</td><td>${esc(b.fechas)}</td><td><span class="tag">${esc(b.origen)}</span></td><td class="num" style="text-align:right">${fmt(b.monto)}</td></tr>`; });
+  html += `<tr class="grand"><td colspan="3">TOTAL</td><td class="num" style="text-align:right">${fmt(total)}</td></tr>`;
   html += '</tbody></table>';
   document.getElementById('m-body').innerHTML = html;
   document.getElementById('overlay').classList.add('open');
